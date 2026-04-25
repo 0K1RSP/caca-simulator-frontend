@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Caca Simulator 💩</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="bg-blobs">
+    <span></span><span></span><span></span><span></span>
+  </div>
+
+  <!-- Auth overlay -->
+  <div id="authOverlay" class="auth-overlay">
+    <div class="auth-card">
+      <h2>💩 Caca Simulator</h2>
+      <p class="auth-sub">Connecte-toi pour retrouver ta progression.</p>
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-mode="login">Connexion</button>
+        <button class="auth-tab" data-mode="signup">Inscription</button>
+      </div>
+      <form id="authForm" class="auth-form" autocomplete="off">
+        <label>Pseudo
+          <input id="authUser" type="text" maxlength="20" required autocomplete="username" />
+        </label>
+        <label>Mot de passe
+          <input id="authPass" type="password" minlength="3" required autocomplete="current-password" />
+        </label>
+        <p id="authError" class="auth-error"></p>
+        <button id="authSubmit" type="submit" class="auth-submit">Se connecter</button>
+        <button id="guestBtn" type="button" class="auth-guest">Jouer en invité</button>
+      </form>
+      <p class="auth-note">⚠️ Comptes stockés localement dans ce navigateur (pas de synchro entre appareils).</p>
+    </div>
+  </div>
+
+  <header class="topbar">
+    <h1>💩 Caca Simulator</h1>
+    <div class="stats">
+      <div class="stat">
+        <span class="label">Caca</span>
+        <span id="poopCount" class="value">0</span>
+      </div>
+      <div class="stat">
+        <span class="label">Par clic</span>
+        <span id="perClick" class="value">1</span>
+      </div>
+      <div class="stat">
+        <span class="label">Par seconde</span>
+        <span id="perSecond" class="value">0</span>
+      </div>
+      <div class="stat">
+        <span class="label">Total produit</span>
+        <span id="totalPoop" class="value">0</span>
+      </div>
+      <div class="stat prestige-stat">
+        <span class="label">Papier Doré 🧻</span>
+        <span id="prestigeCount" class="value">0</span>
+      </div>
+      <div class="stat prestige-stat">
+        <span class="label">Bonus prestige</span>
+        <span id="prestigeBonus" class="value">+0%</span>
+      </div>
+      <div class="stat gem-stat">
+        <span class="label">Gems 💎</span>
+        <span id="gemCount" class="value">0</span>
+      </div>
+      <div class="stat ap-stat">
+        <span class="label">Ascension ✨</span>
+        <span id="apCount" class="value">0</span>
+      </div>
+    </div>
+    <div class="online-box" title="Joueurs actifs (ce navigateur)">
+      <span class="online-dot"></span>
+      <span id="onlineCount">0</span> en ligne
+    </div>
+    <div class="user-box">
+      <span id="userLabel" class="user-label">👤 invité</span>
+      <button id="logoutBtn" class="logout" title="Se déconnecter">Déconnexion</button>
+      <button id="adminBtn" class="admin-btn-small" title="Panel Admin" style="display:none">🛡️ Admin</button>
+    </div>
+    <button id="resetBtn" class="reset" title="Tout réinitialiser">Reset</button>
+  </header>
+
+  <div id="announcementBanner" class="announcement hidden">
+    <span class="ann-icon">📢</span>
+    <span id="announcementText"></span>
+    <button id="announcementClose" class="ann-close" title="Masquer">×</button>
+  </div>
+
+  <div id="pollWidget" class="poll-widget hidden">
+    <h3 id="pollQuestion">Sondage</h3>
+    <div id="pollOptions" class="poll-options"></div>
+    <p id="pollFooter" class="poll-footer"></p>
+  </div>
+
+  <main>
+    <section class="play-area">
+      <div id="eventBanner" class="event-banner hidden"></div>
+      <div id="toilet" class="toilet" data-skin="default" aria-label="Cliquer pour faire caca">
+        <div class="toilet-tank"></div>
+        <div class="toilet-seat">
+          <div class="toilet-bowl">
+            <div class="water"></div>
+            <div id="poopStack" class="poop-stack"></div>
+          </div>
+        </div>
+        <div class="toilet-base"></div>
+        <div class="hint">Clique sur la cuvette !</div>
+      </div>
+      <div id="ambientLayer" class="ambient-layer"></div>
+      <div id="floatLayer" class="float-layer"></div>
+      <div id="particleLayer" class="particle-layer"></div>
+    </section>
+
+    <aside class="shop">
+      <div class="tabs">
+        <button class="tab active" data-tab="toilets">🚽 Toilettes</button>
+        <button class="tab" data-tab="upgrades">⚡ Améliorations</button>
+        <button class="tab" data-tab="prestige">🧻 Prestige</button>
+        <button class="tab" data-tab="quests">🎯 Quêtes</button>
+        <button class="tab" data-tab="ascension">✨ Ascension</button>
+        <button class="tab" data-tab="skins">🎨 Apparence</button>
+        <button class="tab" data-tab="shop">💎 Boutique</button>
+        <button class="tab" data-tab="leaderboard">🏆 Top</button>
+      </div>
+
+      <div class="tab-panel active" data-panel="toilets">
+        <p class="shop-sub">Achète des toilettes pour produire du caca automatiquement.</p>
+        <div id="shopList" class="shop-list"></div>
+      </div>
+
+      <div class="tab-panel" data-panel="upgrades">
+        <p class="shop-sub">Boosts pour ta partie en cours (perdus au prestige).</p>
+        <div id="upgradeList" class="shop-list"></div>
+      </div>
+
+      <div class="tab-panel" data-panel="prestige">
+        <div class="prestige-box">
+          <h3>♻️ Renaissance</h3>
+          <p class="shop-sub">Recommence à zéro pour gagner du <b>Papier Doré 🧻</b>. Chaque PD donne <b>+2%</b> de production permanente. Les améliorations de prestige sont conservées.</p>
+          <p class="prestige-info">Tu gagneras : <span id="prestigeGain">0</span> 🧻</p>
+          <button id="prestigeBtn" class="prestige-btn">Renaître</button>
+        </div>
+        <p class="shop-sub" style="margin-top:14px">Améliorations permanentes (achetées avec 🧻).</p>
+        <div id="prestigeList" class="shop-list"></div>
+      </div>
+
+      <div class="tab-panel" data-panel="quests">
+        <p class="shop-sub">🎯 Termine des quêtes pour gagner des <b>gems 💎</b>.</p>
+        <div id="questList" class="shop-list"></div>
+      </div>
+
+      <div class="tab-panel" data-panel="ascension">
+        <div class="ascend-box">
+          <h3>✨ Ascension</h3>
+          <p class="shop-sub">Sacrifie tout ton 🧻 et tes améliorations pour gagner des <b>Points d'Ascension ✨</b>. Les pets et gems sont conservés.</p>
+          <p class="prestige-info">Tu gagneras : <span id="ascendGain">0</span> ✨</p>
+          <button id="ascendBtn" class="prestige-btn ascend-btn">Ascensionner</button>
+          <p class="shop-sub" id="ascendInfo" style="margin-top:8px"></p>
+        </div>
+        <p class="shop-sub" style="margin-top:14px">🥚 <b>Œufs</b> — ouvre des œufs pour obtenir des pets qui boostent ta production.</p>
+        <div id="eggList" class="egg-grid"></div>
+        <p class="shop-sub" style="margin-top:18px">🐾 <b>Collection de pets</b> — chaque pet boost ta production.</p>
+        <div id="petStats" class="pet-stats"></div>
+        <div id="petList" class="pet-grid"></div>
+      </div>
+
+      <div class="tab-panel" data-panel="skins">
+        <p class="shop-sub">🎨 Personnalise l'apparence de ta toilette avec des gems 💎.</p>
+        <div id="skinList" class="skin-grid"></div>
+      </div>
+
+      <div class="tab-panel" data-panel="leaderboard">
+        <p class="shop-sub">🏆 Classements des joueurs (ce navigateur).</p>
+        <div class="lb-section">
+          <h3 class="lb-title">💩 Top 10 — Caca total produit</h3>
+          <ol id="lbPoop" class="lb-list"></ol>
+        </div>
+        <div class="lb-section">
+          <h3 class="lb-title">🧻 Top 10 — Papier Doré actuel</h3>
+          <ol id="lbPD" class="lb-list"></ol>
+        </div>
+        <div class="lb-section">
+          <h3 class="lb-title">♻️ Top 10 — PD gagnés à vie</h3>
+          <ol id="lbPrestige" class="lb-list"></ol>
+        </div>
+        <div class="lb-section">
+          <h3 class="lb-title">✨ Top 10 — Points d'Ascension</h3>
+          <ol id="lbAP" class="lb-list"></ol>
+        </div>
+      </div>
+
+      <div class="tab-panel" data-panel="shop">
+        <p class="shop-sub">💎 Boosts premium permanents — paiement sécurisé via PayPal.</p>
+        <div id="premiumList" class="shop-list"></div>
+        <p class="shop-disclaimer">⚠️ Tu seras redirigé(e) vers PayPal. Une fois le paiement validé, tu reviens automatiquement et le bonus s'applique. Garde bien la fenêtre ouverte.</p>
+      </div>
+    </aside>
+  </main>
+
+  <div id="toast" class="toast"></div>
+
+  <!-- Admin panel -->
+  <div id="adminPanel" class="admin-panel hidden">
+    <header class="admin-header">
+      <h1>🛡️ Admin Panel — Ansaru</h1>
+      <div class="admin-stats">
+        <span class="badge">👥 <span id="adminUserCount">0</span> comptes</span>
+        <span class="badge online"><span class="online-dot"></span> <span id="adminOnlineCount">0</span> en ligne</span>
+      </div>
+      <button id="adminLogoutBtn" class="logout">Déconnexion</button>
+    </header>
+
+    <div class="admin-grid">
+      <section class="admin-card">
+        <h2>👥 Utilisateurs</h2>
+        <p class="shop-sub">Clique sur un utilisateur pour effectuer des actions.</p>
+        <input id="adminUserSearch" type="text" placeholder="Rechercher…" class="admin-input" />
+        <div id="adminUsersList" class="admin-users-list"></div>
+      </section>
+
+      <section class="admin-card">
+        <h2>📢 Annonce globale</h2>
+        <p class="shop-sub">Visible par tous les joueurs en haut de l'écran.</p>
+        <textarea id="adminAnnounceInput" class="admin-input" rows="3" placeholder="Texte de l'annonce…"></textarea>
+        <div class="admin-row">
+          <button id="adminAnnouncePublish" class="admin-btn primary">Publier</button>
+          <button id="adminAnnounceClear" class="admin-btn">Effacer</button>
+        </div>
+        <div id="adminAnnounceCurrent" class="admin-current"></div>
+      </section>
+
+      <section class="admin-card admin-card-wide">
+        <h2>📊 Sondage actif</h2>
+        <p class="shop-sub">Crée un sondage. Un seul actif à la fois. Les résultats s'actualisent en direct.</p>
+        <input id="adminPollQuestion" type="text" placeholder="Question du sondage" class="admin-input" />
+        <div id="adminPollOptions" class="admin-poll-options"></div>
+        <div class="admin-row">
+          <button id="adminPollAddOption" class="admin-btn">+ Option</button>
+          <button id="adminPollPublish" class="admin-btn primary">Publier le sondage</button>
+          <button id="adminPollClear" class="admin-btn">Supprimer</button>
+        </div>
+        <div id="adminPollResults" class="admin-poll-results"></div>
+      </section>
+      <section class="admin-card admin-card-wide">
+        <h2>🎉 Événements globaux</h2>
+        <p class="shop-sub">Active / désactive des événements pour tous les joueurs en temps réel.</p>
+        <div class="admin-row" style="margin-bottom:8px">
+          <button id="adminEvtClearAll" class="admin-btn danger">🔴 Désactiver tout</button>
+          <button id="adminEvtRefresh" class="admin-btn">🔄 Actualiser</button>
+        </div>
+        <div id="adminEventList" class="admin-event-list"></div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Modal for admin actions on a user -->
+  <div id="adminUserModal" class="admin-modal hidden">
+    <div class="admin-modal-card admin-modal-card-wide">
+      <button class="admin-modal-close" id="adminUserModalClose">×</button>
+      <h2 id="adminUserModalTitle">👤 Utilisateur</h2>
+      <div id="adminUserModalInfo" class="admin-user-info"></div>
+
+      <div class="admin-section">
+        <h3>💰 Économie</h3>
+        <input id="adminGiveAmount" type="text" placeholder="Montant (ex: 1000, 1e6, 1e15)" class="admin-input" />
+        <div class="admin-row">
+          <button class="admin-btn primary" data-act="givePoop">+ Caca 💩</button>
+          <button class="admin-btn" data-act="setPoop">= Définir caca</button>
+          <button class="admin-btn" data-act="multPoop">×10 caca</button>
+        </div>
+        <div class="admin-row">
+          <button class="admin-btn primary" data-act="givePD">+ Papier Doré 🧻</button>
+          <button class="admin-btn" data-act="setPD">= Définir 🧻</button>
+          <button class="admin-btn" data-act="multPD">×10 🧻</button>
+        </div>
+        <div class="admin-row">
+          <button class="admin-btn primary" data-act="giveGems">+ Gems 💎</button>
+          <button class="admin-btn" data-act="setGems">= Définir 💎</button>
+          <button class="admin-btn" data-act="multGems">×10 💎</button>
+        </div>
+        <div class="admin-row">
+          <button class="admin-btn primary" data-act="giveAP">+ Ascension ✨</button>
+          <button class="admin-btn" data-act="setAP">= Définir ✨</button>
+          <button class="admin-btn" data-act="multAP">×10 ✨</button>
+        </div>
+        <div class="admin-row">
+          <button class="admin-btn" data-act="maxPoop">⚡ Caca max</button>
+          <button class="admin-btn" data-act="maxPD">⚡ 🧻 max</button>
+          <button class="admin-btn" data-act="maxGems">⚡ 💎 max</button>
+          <button class="admin-btn" data-act="maxAP">⚡ ✨ max</button>
+        </div>
+      </div>
+
+      <div class="admin-section">
+        <h3>🐾 Pets</h3>
+        <div class="admin-row">
+          <select id="adminPetSelect" class="admin-input" style="flex:2"></select>
+          <input id="adminPetQty" type="number" min="1" class="admin-input" value="1" style="flex:1" />
+          <button class="admin-btn primary" data-act="givePet">+ Donner</button>
+        </div>
+        <div class="admin-row">
+          <button class="admin-btn" data-act="giveAllPets">🐾 Tous les pets ×1</button>
+          <button class="admin-btn danger" data-act="clearPets">🗑 Vider pets</button>
+        </div>
+      </div>
+
+      <div class="admin-section">
+        <h3>🚽 Toilettes</h3>
+        <div class="admin-row">
+          <select id="adminToiletSelect" class="admin-input" style="flex:2"></select>
+          <input id="adminToiletQty" type="number" min="1" class="admin-input" value="10" style="flex:1" />
+          <button class="admin-btn primary" data-act="giveToilet">+ Donner</button>
+        </div>
+        <div class="admin-row">
+          <button class="admin-btn" data-act="give10All">+10 de chaque</button>
+          <button class="admin-btn" data-act="give100All">+100 de chaque</button>
+          <button class="admin-btn danger" data-act="clearToilets">🗑 Vider toilettes</button>
+        </div>
+      </div>
+
+      <div class="admin-section">
+        <h3>💎 Gamepass premium</h3>
+        <p class="shop-sub">Active/désactive les boosts premium gratuitement.</p>
+        <div id="adminGamepassRow" class="admin-row"></div>
+      </div>
+
+      <div class="admin-section">
+        <h3>⚡ Améliorations</h3>
+        <div class="admin-row">
+          <button class="admin-btn primary" data-act="unlockAllUpgrades">🔓 Toutes les améliorations</button>
+          <button class="admin-btn primary" data-act="unlockAllPrestige">🔓 Tout le prestige</button>
+        </div>
+        <div class="admin-row">
+          <button class="admin-btn" data-act="resetUpgrades">Reset améliorations</button>
+          <button class="admin-btn" data-act="resetPrestigeUp">Reset prestige</button>
+        </div>
+      </div>
+
+      <div class="admin-section">
+        <h3>✉️ Message privé</h3>
+        <p class="shop-sub">Envoie un message qui apparaîtra en toast chez le joueur.</p>
+        <input id="adminMsgInput" type="text" placeholder="Ton message…" class="admin-input" maxlength="200" />
+        <div class="admin-row">
+          <button class="admin-btn primary" data-act="sendMsg">📨 Envoyer</button>
+        </div>
+      </div>
+
+      <div class="admin-section">
+        <h3>🛡️ Sécurité</h3>
+        <input id="adminNewPass" type="text" placeholder="Nouveau mot de passe (optionnel)" class="admin-input" />
+        <input id="adminNewName" type="text" placeholder="Nouveau pseudo (optionnel)" class="admin-input" />
+        <div class="admin-row">
+          <button class="admin-btn" data-act="changePass">Changer mdp</button>
+          <button class="admin-btn" data-act="renameUser">Renommer</button>
+        </div>
+      </div>
+
+      <div class="admin-section danger-section">
+        <h3>🔨 Modération</h3>
+        <div class="admin-row">
+          <button class="admin-btn" data-act="kick">👢 Kick (force logout)</button>
+          <button class="admin-btn danger" data-act="toggleBan">🚫 Ban / Unban</button>
+        </div>
+        <div class="admin-row">
+          <button class="admin-btn" data-act="prestige">♻️ Forcer renaissance</button>
+        </div>
+        <div class="admin-row">
+          <button class="admin-btn danger" data-act="reset">⚠️ Reset complet</button>
+          <button class="admin-btn danger" data-act="delete">💀 Supprimer compte</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
