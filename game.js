@@ -1,20 +1,32 @@
+// Nettoyage auto si token invalide
+// ===== CONFIG =====
+const SESSION_KEY = 'caca-session-v1'; // doit être défini AVANT le nettoyage
+
+// Nettoyage auto si token invalide
+if (localStorage.getItem(SESSION_KEY)) {
+  try {
+    const t = localStorage.getItem(SESSION_KEY);
+    const payload = JSON.parse(atob(t.split('.')[1]));
+    if (!payload.username) throw new Error();
+  } catch {
+    localStorage.removeItem(SESSION_KEY);
+  }
+}
+
 // ===== Caca Simulator (avec prestige + comptes) =====
 // ===== API configuration =====
-// URL du backend public - À REMPLACER par ton URL backend déployé (ex: https://ton-backend.onrender.com/api)
 const PROD_BACKEND_URL = "https://caca-simulator-backend.onrender.com/api";
 
 const API_BASE = (() => {
-  // En production (Netlify ou autre domaine)
   if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
     return PROD_BACKEND_URL;
   }
-  // En local : utilise localhost
   return 'http://localhost:3000/api';
 })();
+
 const SAVE_PREFIX = 'caca-sim-save-v2:';
-const SESSION_KEY = 'caca-session-v1'; // Now stores JWT token
-let CURRENT_USER = null; // null = not logged in yet
-let AUTH_TOKEN = null; // JWT token
+let CURRENT_USER = null;
+let AUTH_TOKEN = null;
 
 function saveKey() { return SAVE_PREFIX + (CURRENT_USER || '__guest__'); }
 
@@ -30,9 +42,21 @@ async function apiCall(endpoint, method = 'GET', body = null) {
   
   try {
     const response = await fetch(`${API_BASE}${endpoint}`, options);
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || 'Erreur API');
-    return data;
+    let data = null;
+
+try {
+  data = await response.json();
+} catch {
+  // Si ce n'est pas du JSON, on récupère le texte brut
+  const text = await response.text();
+  throw new Error(text);
+}
+
+if (!response.ok) {
+  throw new Error(data.error || 'Erreur API');
+}
+
+return data;
   } catch (error) {
     throw error;
   }
