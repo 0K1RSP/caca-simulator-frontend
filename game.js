@@ -31,11 +31,17 @@ let AUTH_TOKEN = null;
 function saveKey() { return SAVE_PREFIX + (CURRENT_USER || '__guest__'); }
 
 // ===== API Helper =====
+// ===== API Helper =====
 async function apiCall(url, method = "GET", body = null) {
   const options = {
     method,
     headers: { "Content-Type": "application/json" }
   };
+
+  // Ajouter le token si connecté
+  if (AUTH_TOKEN) {
+    options.headers["Authorization"] = `Bearer ${AUTH_TOKEN}`;
+  }
 
   if (body) options.body = JSON.stringify(body);
 
@@ -48,7 +54,6 @@ async function apiCall(url, method = "GET", body = null) {
   try {
     data = JSON.parse(raw);
   } catch {
-    // Ce n'est pas du JSON → on renvoie le texte brut
     if (!response.ok) throw new Error(raw);
     return raw;
   }
