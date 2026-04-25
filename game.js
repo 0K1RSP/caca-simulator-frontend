@@ -31,35 +31,33 @@ let AUTH_TOKEN = null;
 function saveKey() { return SAVE_PREFIX + (CURRENT_USER || '__guest__'); }
 
 // ===== API Helper =====
-async function apiCall(endpoint, method = 'GET', body = null) {
-  const headers = { 'Content-Type': 'application/json' };
-  if (AUTH_TOKEN) {
-    headers['Authorization'] = `Bearer ${AUTH_TOKEN}`;
-  }
-  
-  const options = { method, headers };
+async function apiCall(url, method = "GET", body = null) {
+  const options = {
+    method,
+    headers: { "Content-Type": "application/json" }
+  };
+
   if (body) options.body = JSON.stringify(body);
-  
+
+  const response = await fetch(url, options);
+
+  // Lire le body UNE SEULE FOIS
+  const raw = await response.text();
+
+  let data;
   try {
-    const response = await fetch(`${API_BASE}${endpoint}`, options);
-    let data = null;
-
-try {
-  data = await response.json();
-} catch {
-  // Si ce n'est pas du JSON, on récupère le texte brut
-  const text = await response.text();
-  throw new Error(text);
-}
-
-if (!response.ok) {
-  throw new Error(data.error || 'Erreur API');
-}
-
-return data;
-  } catch (error) {
-    throw error;
+    data = JSON.parse(raw);
+  } catch {
+    // Ce n'est pas du JSON → on renvoie le texte brut
+    if (!response.ok) throw new Error(raw);
+    return raw;
   }
+
+  if (!response.ok) {
+    throw new Error(data.error || "Erreur API");
+  }
+
+  return data;
 }
 
 // ===== Account management =====
